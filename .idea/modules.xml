@@ -2,6 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/LichessWebApp.iml" filepath="$PROJECT_DIR$/.idea/modules/LichessWebApp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/LichessWebApp.app.unitTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/SWeb.iml" filepath="$PROJECT_DIR$/SWeb.iml" group="SWeb" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="SWeb/app" />
     </modules>

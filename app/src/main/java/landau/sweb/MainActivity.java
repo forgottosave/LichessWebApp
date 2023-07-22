@@ -6,14 +6,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
-import android.app.LoaderManager;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -38,40 +36,32 @@ import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
-import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Patterns;
 import android.util.TypedValue;
 import android.view.GestureDetector;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.HttpAuthHandler;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
-import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -120,14 +110,6 @@ public class MainActivity extends Activity {
     static final String searchCompleteUrl = "https://www.google.com/complete/search?client=firefox&q=%s";
     static final String desktopUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36";
 
-    static final String[] adblockRulesList = {
-            "https://easylist.to/easylist/easylist.txt",
-            "https://easylist.to/easylist/easyprivacy.txt",
-            "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext",    // Peter's
-            "https://easylist.to/easylist/fanboy-social.txt",
-            "https://easylist-downloads.adblockplus.org/advblock.txt",  // RU AdList
-    };
-
     static final int FORM_FILE_CHOOSER = 1;
 
     static final int PERMISSION_REQUEST_EXPORT_BOOKMARKS = 1;
@@ -137,12 +119,8 @@ public class MainActivity extends Activity {
     private ArrayList<Tab> tabs = new ArrayList<>();
     private int currentTabIndex;
     private FrameLayout webviews;
-    private AutoCompleteTextView et;
-    private boolean isNightMode;
     private boolean isFullscreen;
     private SharedPreferences prefs;
-    private boolean useAdBlocker;
-    private AdBlocker adBlocker;
     private boolean isLogRequests;
     private ArrayList<String> requestsLog;
     private final View[] fullScreenView = new View[1];
@@ -183,62 +161,6 @@ public class MainActivity extends Activity {
         private MyBooleanSupplier getState;
     }
 
-    @SuppressWarnings("unchecked")
-    final MenuAction[] menuActions = new MenuAction[]{
-            new MenuAction("Desktop UA", R.drawable.ua, this::toggleDesktopUA, () -> getCurrentTab().isDesktopUA),
-            new MenuAction("3rd party cookies", R.drawable.cookies_3rdparty, this::toggleThirdPartyCookies,
-                    () -> CookieManager.getInstance().acceptThirdPartyCookies(getCurrentWebView())),
-            new MenuAction("Ad Blocker", R.drawable.adblocker, this::toggleAdblocker, () -> useAdBlocker),
-            new MenuAction("Update adblock rules", 0, this::updateAdblockRules),
-            new MenuAction("Night mode", R.drawable.night, this::toggleNightMode, () -> isNightMode),
-            new MenuAction("Show address bar", R.drawable.url_bar, this::toggleShowAddressBar, () -> et.getVisibility() == View.VISIBLE),
-            new MenuAction("Full screen", R.drawable.fullscreen, this::toggleFullscreen, () -> isFullscreen),
-            new MenuAction("Tab history", R.drawable.left_right, this::showTabHistory),
-            new MenuAction("Log requests", R.drawable.log_requests, this::toggleLogRequests, () -> isLogRequests),
-            new MenuAction("Find on page", R.drawable.find_on_page, this::findOnPage),
-            new MenuAction("Page info", R.drawable.page_info, this::pageInfo),
-            new MenuAction("Share URL", android.R.drawable.ic_menu_share, this::shareUrl),
-            new MenuAction("Open URL in app", android.R.drawable.ic_menu_view, this::openUrlInApp),
-
-            new MenuAction("Back", R.drawable.back,
-                    () -> {if (getCurrentWebView().canGoBack()) getCurrentWebView().goBack();}),
-            new MenuAction("Forward", R.drawable.forward,
-                    () -> {if (getCurrentWebView().canGoForward()) getCurrentWebView().goForward();}),
-            new MenuAction("Reload", R.drawable.reload, () -> getCurrentWebView().reload()),
-            new MenuAction("Stop", R.drawable.stop, () -> getCurrentWebView().stopLoading()),
-            new MenuAction("Scroll to top", R.drawable.top,
-                    () -> getCurrentWebView().pageUp(true)),
-            new MenuAction("Scroll to bottom", R.drawable.bottom,
-                    () -> getCurrentWebView().pageDown(true)),
-
-            new MenuAction("Menu", R.drawable.menu, this::showMenu),
-            new MenuAction("Full menu", R.drawable.menu, this::showFullMenu),
-
-            new MenuAction("Bookmarks", R.drawable.bookmarks, this::showBookmarks),
-            new MenuAction("Add bookmark", R.drawable.bookmark_add, this::addBookmark),
-            new MenuAction("Export bookmarks", R.drawable.bookmarks_export, this::exportBookmarks),
-            new MenuAction("Import bookmarks", R.drawable.bookmarks_import, this::importBookmarks),
-            new MenuAction("Delete all bookmarks", 0, this::deleteAllBookmarks),
-
-            new MenuAction("Clear history and cache", 0, this::clearHistoryCache),
-
-            new MenuAction("Show tabs", R.drawable.tabs, this::showOpenTabs),
-            new MenuAction("New tab", R.drawable.tab_new, () -> {
-                newTab("");
-                switchToTab(tabs.size() - 1);
-            }),
-            new MenuAction("Close tab", R.drawable.tab_close, this::closeCurrentTab),
-    };
-
-    final String[][] toolbarActions = {
-            {"Back", "Scroll to top", "Tab history"},
-            {"Forward", "Scroll to bottom", "Ad Blocker"},
-            {"Bookmarks", null, "Add bookmark"},
-            {"Night mode", null, "Full screen"},
-            {"Show tabs", "New tab", "Close tab"},
-            {"Menu", "Reload", "Show address bar"},
-    };
-
     final String[] shortMenu = {
             "Desktop UA", "Log requests", "Find on page", "Page info", "Share URL",
             "Open URL in app",  "Full menu"
@@ -278,7 +200,7 @@ public class MainActivity extends Activity {
         if (bundle != null) {
             webview.restoreState(bundle);
         }
-        webview.setBackgroundColor(isNightMode ? Color.BLACK : Color.WHITE);
+        webview.setBackgroundColor(Color.BLACK);
         WebSettings settings = webview.getSettings();
         settings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
         settings.setAllowUniversalAccessFromFileURLs(true);
@@ -363,8 +285,6 @@ public class MainActivity extends Activity {
                 progressBar.setProgress(0);
                 progressBar.setVisibility(View.VISIBLE);
                 if (view == getCurrentWebView()) {
-                    et.setText(url);
-                    et.setSelection(0);
                     view.requestFocus();
                 }
                 injectCSS(view);
@@ -372,14 +292,6 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (view == getCurrentWebView()) {
-                    // Don't use the argument url here since navigation to that URL might have been
-                    // cancelled due to SSL error
-                    if (et.getSelectionStart() == 0 && et.getSelectionEnd() == 0 && et.getText().toString().equals(view.getUrl())) {
-                        // If user haven't started typing anything, focus on webview
-                        view.requestFocus();
-                    }
-                }
                 injectCSS(view);
             }
 
@@ -400,19 +312,6 @@ public class MainActivity extends Activity {
             final InputStream emptyInputStream = new ByteArrayInputStream(new byte[0]);
 
             String lastMainPage = "";
-
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                if (adBlocker != null) {
-                    if (request.isForMainFrame()) {
-                        lastMainPage = request.getUrl().toString();
-                    }
-                    if (adBlocker.shouldBlock(request.getUrl(), lastMainPage)) {
-                        return new WebResourceResponse("text/plain", "UTF-8", emptyInputStream);
-                    }
-                }
-                return super.shouldInterceptRequest(view, request);
-            }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -660,7 +559,6 @@ public class MainActivity extends Activity {
         getCurrentWebView().setVisibility(View.GONE);
         currentTabIndex = tab;
         getCurrentWebView().setVisibility(View.VISIBLE);
-        et.setText(getCurrentWebView().getUrl());
         getCurrentWebView().requestFocus();
     }
 
@@ -698,38 +596,11 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> updateFullScreen());
 
         isFullscreen = false;
-        isNightMode = prefs.getBoolean("night_mode", false);
 
         webviews = findViewById(R.id.webviews);
         currentTabIndex = 0;
 
-        et = findViewById(R.id.et);
-
         // setup edit text
-        et.setSelected(false);
-        String initialUrl = getUrlFromIntent(getIntent());
-        et.setText(initialUrl.isEmpty() ? "about:blank" : initialUrl);
-        et.setAdapter(new SearchAutocompleteAdapter(this, text -> {
-            et.setText(text);
-            et.setSelection(text.length());
-        }));
-        et.setOnItemClickListener((parent, view, position, id) -> {
-            getCurrentWebView().requestFocus();
-            loadUrl(et.getText().toString(), getCurrentWebView());
-        });
-
-        setupToolbar(findViewById(R.id.toolbar));
-
-        et.setOnKeyListener((v, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                loadUrl(et.getText().toString(), getCurrentWebView());
-                getCurrentWebView().requestFocus();
-                return true;
-            } else {
-                return false;
-            }
-        });
-
         searchEdit = findViewById(R.id.searchEdit);
         searchEdit.addTextChangedListener(new TextWatcher() {
             @Override
@@ -760,13 +631,9 @@ public class MainActivity extends Activity {
             hideKeyboard();
         });
 
-        useAdBlocker = prefs.getBoolean("adblocker", true);
-        initAdblocker();
-
-        newTab(et.getText().toString());
+        newTab("https://lichess.org");
         getCurrentWebView().setVisibility(View.VISIBLE);
         getCurrentWebView().requestFocus();
-        onNightModeChange();
     }
 
     @Override
@@ -799,39 +666,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void maybeSetupTabCountTextView(View view, String name) {
-        if ("Show tabs".equals(name)) {
-            txtTabCount = view.findViewById(R.id.txtText);
-        }
-    }
-
-    private void setupToolbar(ViewGroup parent) {
-        for (String[] actions : toolbarActions) {
-            View v = getLayoutInflater().inflate(R.layout.toolbar_button, parent, false);
-            parent.addView(v);
-            Runnable a1 = null, a2 = null, a3 = null;
-            if (actions[0] != null) {
-                maybeSetupTabCountTextView(v, actions[0]);
-                MenuAction action = getAction(actions[0]);
-                ((ImageView) v.findViewById(R.id.btnShortClick)).setImageResource(action.icon);
-                a1 = action.action;
-            }
-            if (actions[1] != null) {
-                maybeSetupTabCountTextView(v, actions[1]);
-                MenuAction action = getAction(actions[1]);
-                ((ImageView) v.findViewById(R.id.btnLongClick)).setImageResource(action.icon);
-                a2 = action.action;
-            }
-            if (actions[2] != null) {
-                maybeSetupTabCountTextView(v, actions[2]);
-                MenuAction action = getAction(actions[2]);
-                ((ImageView) v.findViewById(R.id.btnSwipeUp)).setImageResource(action.icon);
-                a3 = action.action;
-            }
-            setToolbarButtonActions(v, a1, a2, a3);
-        }
-    }
-
     private void pageInfo() {
         String s = "URL: " + getCurrentWebView().getUrl() + "\n";
         s += "Title: " + getCurrentWebView().getTitle() + "\n\n";
@@ -845,120 +679,9 @@ public class MainActivity extends Activity {
                 .show();
     }
 
-    private void showOpenTabs() {
-        String[] items = new String[tabs.size()];
-        for (int i = 0; i < tabs.size(); i++) {
-            items[i] = tabs.get(i).webview.getTitle();
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapterWithCurrentItem<>(
-                MainActivity.this,
-                android.R.layout.simple_list_item_1,
-                items,
-                currentTabIndex);
-        AlertDialog.Builder tabsDialog = new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Tabs")
-                .setAdapter(adapter, (dialog, which) -> switchToTab(which));
-        if (!closedTabs.isEmpty()) {
-            tabsDialog.setNeutralButton("Undo closed tabs", (dialog, which) -> {
-                String[] items1 = new String[closedTabs.size()];
-                for (int i = 0; i < closedTabs.size(); i++) {
-                    items1[i] = closedTabs.get(i).title;
-                }
-                AlertDialog undoClosedTabsDialog = new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Undo closed tabs")
-                        .setItems(items1, (dialog1, which1) -> {
-                            Bundle bundle = closedTabs.get(which1).bundle;
-                            closedTabs.remove(which1);
-                            newTabFromBundle(bundle);
-                            switchToTab(tabs.size() - 1);
-                        })
-                        .create();
-                undoClosedTabsDialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
-                    undoClosedTabsDialog.dismiss();
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Remove closed tab?")
-                            .setMessage(closedTabs.get(position).title)
-                            .setNegativeButton("Cancel", (dlg, which1) -> {})
-                            .setPositiveButton("Remove", (dlg, which1) -> {
-                                closedTabs.remove(position);
-                            })
-                            .show();
-                    return true;
-                });
-                undoClosedTabsDialog.show();
-            });
-        }
-        tabsDialog.show();
-    }
-
-    private void showTabHistory() {
-        WebBackForwardList list = getCurrentWebView().copyBackForwardList();
-        final int size = list.getSize();
-        final int idx = size - list.getCurrentIndex() - 1;
-        String[] items = new String[size];
-        for (int i = 0; i < size; i++) {
-            items[size - i - 1] = list.getItemAtIndex(i).getTitle();
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapterWithCurrentItem<>(
-                this,
-                android.R.layout.simple_list_item_1,
-                items,
-                idx);
-        new AlertDialog.Builder(this)
-                .setTitle("Navigation History")
-                .setAdapter(adapter, (dialog, which) -> getCurrentWebView().goBackOrForward(idx - which))
-                .show();
-    }
-
     private void toggleFullscreen() {
         isFullscreen = !isFullscreen;
         updateFullScreen();
-    }
-
-    private void toggleShowAddressBar() {
-        et.setVisibility(et.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-    }
-
-    private void toggleNightMode() {
-        isNightMode = !isNightMode;
-        prefs.edit().putBoolean("night_mode", isNightMode).apply();
-        onNightModeChange();
-    }
-
-    private void initAdblocker() {
-        if (useAdBlocker) {
-            adBlocker = new AdBlocker(getExternalFilesDir("adblock"));
-        } else {
-            adBlocker = null;
-        }
-    }
-
-    private void toggleAdblocker() {
-        useAdBlocker = !useAdBlocker;
-        initAdblocker();
-        prefs.edit().putBoolean("adblocker", useAdBlocker).apply();
-        Toast.makeText(MainActivity.this, "Ad Blocker " + (useAdBlocker ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
-    }
-
-    private void updateAdblockRules() {
-        getLoaderManager().restartLoader(0, null, new LoaderManager.LoaderCallbacks<Integer>() {
-            @Override
-            public Loader<Integer> onCreateLoader(int id, Bundle args) {
-                return new AdblockRulesLoader(MainActivity.this, adblockRulesList, getExternalFilesDir("adblock"));
-            }
-
-            @SuppressLint("DefaultLocale")
-            @Override
-            public void onLoadFinished(Loader<Integer> loader, Integer data) {
-                Toast.makeText(MainActivity.this,
-                        String.format("Updated %d / %d adblock subscriptions", data, adblockRulesList.length),
-                        Toast.LENGTH_SHORT).show();
-                initAdblocker();
-            }
-
-            @Override
-            public void onLoaderReset(Loader<Integer> loader) {}
-        });
     }
 
     private void showBookmarks() {
@@ -970,7 +693,6 @@ public class MainActivity extends Activity {
                 .setCursor(cursor, (dlg, which) -> {
                             cursor.moveToPosition(which);
                             String url = cursor.getString(cursor.getColumnIndex("url"));
-                            et.setText(url);
                             loadUrl(url, getCurrentWebView());
                         }, "title")
                 .create();
@@ -1219,7 +941,6 @@ public class MainActivity extends Activity {
             currentTabIndex = 0;
         }
         getCurrentWebView().setVisibility(View.VISIBLE);
-        et.setText(getCurrentWebView().getUrl());
         setTabCountText(tabs.size());
         getCurrentWebView().requestFocus();
     }
@@ -1245,39 +966,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void onNightModeChange() {
-        if (isNightMode) {
-            int textColor = Color.rgb(0x61, 0x61, 0x5f);
-            int backgroundColor = Color.rgb(0x22, 0x22, 0x22);
-            et.setTextColor(textColor);
-            et.setBackgroundColor(backgroundColor);
-            searchEdit.setTextColor(textColor);
-            searchEdit.setBackgroundColor(backgroundColor);
-            searchCount.setTextColor(textColor);
-            findViewById(R.id.main_layout).setBackgroundColor(Color.BLACK);
-            findViewById(R.id.toolbar).setBackgroundColor(Color.BLACK);
-            ((ProgressBar) findViewById(R.id.progressbar)).setProgressTintList(ColorStateList.valueOf(Color.rgb(0, 0x66, 0)));
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            getWindow().setNavigationBarColor(Color.BLACK);
-        } else {
-            int textColor = Color.BLACK;
-            int backgroundColor = Color.rgb(0xe0, 0xe0, 0xe0);
-            et.setTextColor(textColor);
-            et.setBackgroundColor(backgroundColor);
-            searchEdit.setTextColor(textColor);
-            searchEdit.setBackgroundColor(backgroundColor);
-            searchCount.setTextColor(textColor);
-            findViewById(R.id.main_layout).setBackgroundColor(Color.WHITE);
-            findViewById(R.id.toolbar).setBackgroundColor(Color.rgb(0xe0, 0xe0, 0xe0));
-            ((ProgressBar) findViewById(R.id.progressbar)).setProgressTintList(ColorStateList.valueOf(Color.rgb(0, 0xcc, 0)));
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        }
-        for (int i = 0; i < tabs.size(); i++) {
-            tabs.get(i).webview.setBackgroundColor(isNightMode ? Color.BLACK : Color.WHITE);
-            injectCSS(tabs.get(i).webview);
-        }
-    }
-
     private void toggleDesktopUA() {
         Tab tab = getCurrentTab();
         tab.isDesktopUA = !tab.isDesktopUA;
@@ -1292,62 +980,11 @@ public class MainActivity extends Activity {
         cookieManager.setAcceptThirdPartyCookies(getCurrentWebView(), newValue);
     }
 
-    private void toggleLogRequests() {
-        isLogRequests = !isLogRequests;
-        if (isLogRequests) {
-            // Start logging
-            if (requestsLog == null) {
-                requestsLog = new ArrayList<>();
-            } else {
-                requestsLog.clear();
-            }
-        } else {
-            // End logging, show result
-            StringBuilder sb = new StringBuilder("<title>Request Log</title><h1>Request Log</h1>");
-            for (String url : requestsLog) {
-                sb.append("<a href=\"");
-                sb.append(url);
-                sb.append("\">");
-                sb.append(url);
-                sb.append("</a><br><br>");
-            }
-            String base64 = Base64.encodeToString(sb.toString().getBytes(StandardCharsets.UTF_8), Base64.DEFAULT);
-            newTab("data:text/html;base64," + base64);
-            switchToTab(tabs.size() - 1);
-        }
-    }
-
     private void findOnPage() {
         searchEdit.setText("");
         findViewById(R.id.searchPane).setVisibility(View.VISIBLE);
         searchEdit.requestFocus();
         showKeyboard();
-    }
-
-    private void showMenu() {
-        MenuAction[] shortMenuActions = new MenuAction[shortMenu.length];
-        for (int i = 0; i < shortMenu.length; i++) {
-            shortMenuActions[i] = getAction(shortMenu[i]);
-        }
-        MenuActionArrayAdapter adapter = new MenuActionArrayAdapter(
-                MainActivity.this,
-                android.R.layout.simple_list_item_1,
-                shortMenuActions);
-        new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Actions")
-                .setAdapter(adapter, (dialog, which) -> shortMenuActions[which].action.run())
-                .show();
-    }
-
-    private void showFullMenu() {
-        MenuActionArrayAdapter adapter = new MenuActionArrayAdapter(
-                MainActivity.this,
-                android.R.layout.simple_list_item_1,
-                menuActions);
-        new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Full menu")
-                .setAdapter(adapter, (dialog, which) -> menuActions[which].action.run())
-                .show();
     }
 
     private void shareUrl() {
@@ -1399,7 +1036,6 @@ public class MainActivity extends Activity {
     private void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         assert imm != null;
-        imm.hideSoftInputFromWindow(et.getWindowToken(), 0);
     }
 
     private void showKeyboard() {
@@ -1451,43 +1087,9 @@ public class MainActivity extends Activity {
 */
             final String styleElementId = "night_mode_style_4398357";   // should be unique
             String js;
-            if (isNightMode) {
-                js = "if (document.head) {" +
-                        "if (!window.night_mode_id_list) night_mode_id_list = new Set();" +
-                        "var newset = new Set();" +
-                        "   for (var n of document.querySelectorAll(':not(a)')) { " +
-                        "     if (n.closest('a') != null) continue;" +
-                        "     if (!n.id) n.id = 'night_mode_id_' + (night_mode_id_list.size + newset.size);" +
-                        "     if (!night_mode_id_list.has(n.id)) newset.add(n.id); " +
-                        "   }" +
-                        "for (var item of newset) night_mode_id_list.add(item);" +
-                        "var style = document.getElementById('" + styleElementId + "');" +
-                        "if (!style) {" +
-                        "   style = document.createElement('style');" +
-                        "   style.id = '" + styleElementId + "';" +
-                        "   style.type = 'text/css';" +
-                        "   style.innerHTML = '" + css + "';" +
-                        "   document.head.appendChild(style);" +
-                        "}" +
-                        "   var css2 = ' ';" +
-                        "   for (var nid of newset) css2 += ('#' + nid + '#' + nid + ',');" +
-                        "   css2 += '#nonexistent {background-color: #161a1e !important; color: #61615f !important; border-color: #212a32 !important; background-image:none !important; outline-color: #161a1e !important; z-index: 1 !important}';" +
-                        "   style.innerHTML += css2;" +
-                        "}" +
-                        "var iframes = document.getElementsByTagName('iframe');" +
-                        "for (var i = 0; i < iframes.length; i++) {" +
-                        "   var fr = iframes[i];" +
-                        "   var style = fr.contentWindow.document.createElement('style');" +
-                        "   style.id = '" + styleElementId + "';" +
-                        "   style.type = 'text/css';" +
-                        "   style.innerHTML = '" + css + "';" +
-                        "   fr.contentDocument.head.appendChild(style);" +
-                        "}";
-            } else {
-                js = "if (document.head && document.getElementById('" + styleElementId + "')) {" +
+            js = "if (document.head && document.getElementById('" + styleElementId + "')) {" +
                         "   var style = document.getElementById('" + styleElementId + "');" +
                         "   document.head.removeChild(style);" +
-                        "   window.night_mode_id_list = undefined;" +
                         "}" +
                         "var iframes = document.getElementsByTagName('iframe');" +
                         "for (var i = 0; i < iframes.length; i++) {" +
@@ -1495,7 +1097,6 @@ public class MainActivity extends Activity {
                         "   var style = fr.contentWindow.document.getElementById('" + styleElementId + "');" +
                         "   fr.contentDocument.head.removeChild(style);" +
                         "}";
-            }
             webview.evaluateJavascript("javascript:(function() {" + js + "})()", null);
             if (!getCurrentTab().isDesktopUA) {
                 webview.evaluateJavascript("javascript:document.querySelector('meta[name=viewport]').content='width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=1';", null);
@@ -1543,29 +1144,6 @@ public class MainActivity extends Activity {
     // java.util.function.BooleanSupplier requires API 24
     interface MyBooleanSupplier {
         boolean getAsBoolean();
-    }
-
-    private void setToolbarButtonActions(View view, Runnable click, Runnable longClick, Runnable swipeUp) {
-        if (click != null) {
-            view.setOnClickListener(v -> click.run());
-        }
-        if (longClick != null) {
-            view.setOnLongClickListener(v -> {
-                longClick.run();
-                return true;
-            });
-        }
-        if (swipeUp != null) {
-            final GestureDetector gestureDetector = new GestureDetector(this, new MyGestureDetector(this) {
-                @Override
-                boolean onFlingUp() {
-                    swipeUp.run();
-                    return true;
-                }
-            });
-            //noinspection AndroidLintClickableViewAccessibility
-            view.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
-        }
     }
 
     private class MyGestureDetector extends GestureDetector.SimpleOnGestureListener {
@@ -1736,10 +1314,7 @@ public class MainActivity extends Activity {
             }
             TextView v = convertView.findViewById(android.R.id.text1);
             v.setText(completions.get(position));
-            Drawable d = mContext.getResources().getDrawable(R.drawable.commit_search, null);
             int size = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 32, mContext.getResources().getDisplayMetrics());
-            d.setBounds(0, 0, size, size);
-            v.setCompoundDrawables(null, null, d, null);
             //noinspection AndroidLintClickableViewAccessibility
             v.setOnTouchListener((v1, event) -> {
                 if (event.getAction() != MotionEvent.ACTION_DOWN) {

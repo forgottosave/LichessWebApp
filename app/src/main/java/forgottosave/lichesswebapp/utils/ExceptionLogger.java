@@ -1,4 +1,4 @@
-package landau.sweb.utils;
+package forgottosave.lichesswebapp.utils;
 
 import android.annotation.SuppressLint;
 import android.os.Environment;

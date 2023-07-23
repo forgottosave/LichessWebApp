@@ -1,4 +1,4 @@
-package landau.sweb;
+package forgottosave.lichesswebapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -91,7 +91,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import landau.sweb.utils.ExceptionLogger;
+import forgottosave.lichesswebapp.utils.ExceptionLogger;
 
 public class MainActivity extends Activity {
 

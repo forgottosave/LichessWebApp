@@ -1,4 +1,4 @@
-package landau.sweb;
+package forgottosave.lichesswebapp;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

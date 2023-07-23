@@ -1,17 +1,22 @@
-<img src="https://github.com/forgottosave/LichessWebApp/assets/88790311/5c0a1fc1-871b-48df-ad17-26d0bcbe4353" align="right" height="64" width="64">
+<img src="https://github.com/forgottosave/LichessWebApp/assets/88790311/acb57c9e-46aa-42db-87ca-1dee751ac5ec" align="right" height="64" width="64">
 
 # Lichess Web App
-A simple [sweb](https://github.com/alandau/sweb)-browser-based [Lichess](https://github.com/lichess-org) App.
 
-This project is still **under construction**.
+<img src="https://github.com/forgottosave/LichessWebApp/assets/88790311/b1aa8935-857f-47b1-ad6d-a321784373d3" align="right" width="20%">
+
+A simple browser-based [Lichess](https://github.com/lichess-org) App.
+
+I started this project to bridge the gap between the old, depricated Lichess app, [lichobile](https://github.com/lichess-org/lichobile), and the new one, [mobile](https://github.com/lichess-org/mobile). This provides a functional possibility to access Lichess on Android, that is not your daily browser :) 
 
 ## Download
-There are no [releases](https://github.com/forgottosave/LichessWebApp/releases/latest) yet.
+All releases can be found [here](https://github.com/forgottosave/LichessWebApp/releases/latest).
+
+Note, that currently there are only pre-releases. They function though, so feel free to use them!
 
 ## Special Thanks
 to the devs of:
 - [lichess](https://github.com/lichess-org), the greatest chess platform
-- [sweb](https://github.com/alandau/sweb), the brower this repo is based on / forked from
+- [sweb](https://github.com/alandau/sweb), the browser this project is based on / forked from
 
 ## License
 MIT

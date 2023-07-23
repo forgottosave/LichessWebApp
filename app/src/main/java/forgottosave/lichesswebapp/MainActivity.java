@@ -218,6 +218,7 @@ public class MainActivity extends Activity {
                 injectCSS(view);
                 if (newProgress == 100) {
                     progressBar.setVisibility(View.GONE);
+                    // TODO findViewById(R.id.loadingScreen).setVisibility(View.GONE);
                 } else {
                     progressBar.setProgress(newProgress);
                 }
@@ -284,6 +285,7 @@ public class MainActivity extends Activity {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 progressBar.setProgress(0);
                 progressBar.setVisibility(View.VISIBLE);
+                // TODO findViewById(R.id.loadingScreen).setVisibility(View.VISIBLE);
                 if (view == getCurrentWebView()) {
                     view.requestFocus();
                 }
@@ -601,34 +603,9 @@ public class MainActivity extends Activity {
         currentTabIndex = 0;
 
         // setup edit text
-        searchEdit = findViewById(R.id.searchEdit);
-        searchEdit.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                getCurrentWebView().findAllAsync(s.toString());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-        searchCount = findViewById(R.id.searchCount);
         findViewById(R.id.searchFindNext).setOnClickListener(v -> {
             hideKeyboard();
             getCurrentWebView().findNext(true);
-        });
-        findViewById(R.id.searchFindPrev).setOnClickListener(v -> {
-            hideKeyboard();
-            getCurrentWebView().findNext(false);
-        });
-        findViewById(R.id.searchClose).setOnClickListener(v -> {
-            getCurrentWebView().clearMatches();
-            searchEdit.setText("");
-            getCurrentWebView().requestFocus();
-            findViewById(R.id.searchPane).setVisibility(View.GONE);
-            hideKeyboard();
         });
 
         newTab("https://lichess.org");
@@ -982,7 +959,7 @@ public class MainActivity extends Activity {
 
     private void findOnPage() {
         searchEdit.setText("");
-        findViewById(R.id.searchPane).setVisibility(View.VISIBLE);
+        findViewById(R.id.loadingScreen).setVisibility(View.VISIBLE);
         searchEdit.requestFocus();
         showKeyboard();
     }
